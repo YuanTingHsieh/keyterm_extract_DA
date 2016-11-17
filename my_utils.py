@@ -193,10 +193,10 @@ def glove_init_LSTM(max_features, maxlen, args, d_output, tobetrain, embedding_m
 	model = Sequential()
 	model.add(Embedding(max_features, embedding_dim, weights = [embedding_matrix],input_length=maxlen, init='glorot_uniform', trainable=True)) # modified 1115 HSIEH
 	model.add(LSTM(output_dim = d_lstm, return_sequences=False, input_shape=(maxlen, embedding_dim), init='glorot_uniform', inner_init='orthogonal', inner_activation='hard_sigmoid', trainable = tobetrain))
-	model.add(Dense(d_dense, init='glorot_uniform', trainable = tobetrain))
+	model.add(Dense(d_dense, init='glorot_uniform', trainable = True))
 	model.add(Activation('relu'))
 	model.add(Dropout(0.1))
-	model.add(Dense(d_dense, init='glorot_uniform', trainable = tobetrain))
+	model.add(Dense(d_dense, init='glorot_uniform', trainable = True))
 	model.add(Activation('relu'))
 	model.add(Dense(d_output))
 	model.add(Activation('softmax'))

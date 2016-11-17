@@ -15,11 +15,10 @@ parser.add_argument("-dense_dim", type=int, default=1024)
 parser.add_argument("-lstm_dim", type=int, default=128)
 parser.add_argument("-epochs", type=int, default=20)
 parser.add_argument("-batch_size", type=int, default=256)
-parser.add_argument("-mode", type=str, required=True, help="Choose to train model or pred and cal map", choices=['train','cal_map'])
+parser.add_argument("-mode", type=str, required=True, help="Choose to train model or adapt or cal map", choices=['train','adapt','cal_map'])
 parser.add_argument("-exp_name", type=str, required=True, help="Name this experiment!!")
 parser.add_argument("-train_on",type=str,required=True, choices=['stack','interspeech'])
 parser.add_argument("-pretrain_weight",type=str)
-#parser.add_argument("-max_features", type=int, default=15000)
 args = parser.parse_args()
 
 # paths
@@ -30,7 +29,7 @@ source = args.train_on
 datapathin = './splitdata/'
 vectorpathin = './splitvector/'
 pathweight = './weight/'
-weightname = source+'_'+args.exp_name+'.pretrain.weight'
+weightname = source+'_'+args.exp_name+'.weight'
 
 
 '''train paths'''
@@ -75,11 +74,15 @@ BEM = BuildEmbedMatrix()
 #embedding_matrix = BEM.buildEmbedMatrix(glove_file)
 embedding_matrix = BEM.buildEmbedMatrix(myWord2Vec)
 
+tobetrain = True
+if args.mode == 'adapt':
+	tobetrain = False
+
 # build Model
-source_model = glove_init_LSTM(max_features,maxlen,args,d_output,True, embedding_matrix)
+source_model = glove_init_LSTM(max_features,maxlen,args,d_output,tobetrain, embedding_matrix)
 
 # training
-if args.mode == 'train':
+if args.mode != 'cal_map':
 	# load data
 	X_train, Y_train = myloadData(file_name_train,file_name_train_tag,d_output,maxlen)
 	X_test, Y_test = myloadData(file_name_test,file_name_test_tag,d_output,maxlen)
@@ -94,28 +97,10 @@ if args.mode == 'train':
 	y = y[valid_index,0:]
 	y_norm = y_norm[valid_index,0:]
 
-	#total_data = len(X_train)
-	#step = args.batch_size
-	#data_portion = total_data/step
-	#print "Seperate to %d portions" % data_portion 
 	print "Training started..."
-	#index = np.arange(total_data)
 	
 	for e in range(args.epochs):
 		print "================================================Epoch %d================================================================" % (e+1)
-		#np.random.shuffle(index)
-		#for start in range(0,total_data,step):
-		#	end = start+step
-		#	if end > total_data:
-		#		end = total_data
-		#	source_model.fit(
-		#		X_train[index[start:end]],
-		#		Y_train[index[start:end]],
-		#		batch_size=args.batch_size,
-		#		nb_epoch=1,
-		#		verbose=0,
-		#		#validation_data=(X_test, Y_test)
-		#	)
 		source_model.fit(
 			X_train,
 			Y_train,
@@ -148,6 +133,7 @@ if args.mode == 'train':
 		# write out weights every epoch!!
 		#if (e+1)%10 == 0:
 		theweight = source_model.get_weights()
+		weightname += args.mode
 		fileout = open(pathweight + weightname + '_epo'+str(e+1),'wb')
 		pickle.dump(theweight, fileout)
 	
