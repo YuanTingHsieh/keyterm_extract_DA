@@ -17,18 +17,14 @@ set_session(tf.Session(config=config))
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-atten_mode", type=str, required=True, help="Choose attention type: sigmoid or softmax or no", choices=['sigmoid','softmax','no'])
-#parser.add_argument("-ext_mode", type=str, default='freq', help="Choose extract mode: freq or tfidf", choices=['freq','tfidf'])
-parser.add_argument("-tag_num", type=int, default=1000)
 parser.add_argument("-embed_dim", type=int, default=300)
 parser.add_argument("-dense_dim", type=int, default=1024)
 parser.add_argument("-lstm_dim", type=int, default=128)
 parser.add_argument("-epochs", type=int, default=20)
 parser.add_argument("-batch_size", type=int, default=256)
-parser.add_argument("-mode", type=str, required=True, help="Choose to train model or pred and cal map", choices=['train','cal_map'])
 parser.add_argument("-exp_name", type=str, required=True, help="Name this experiment!!")
 parser.add_argument("-train_on",type=str,required=True, choices=['stack','interspeech'])
-parser.add_argument("-weight",type=str, help="Required by cal_map")
-#parser.add_argument("-max_features", type=int, default=15000)
+parser.add_argument("-show_map",type=bool, help="Show map or not", default=False)
 args = parser.parse_args()
 
 # paths
@@ -53,7 +49,6 @@ file_dic_name = datapathin+'All.dic.body'
 file_tag_dic = datapathin+source+'.dic.tag'
 file_test_tag = datapathin+source+'.test.tag'
 file_train_tag = datapathin+source+'.train.tag'
-resultname = './result/'+source+'_'+args.exp_name+'.result'
 
 
 # parameters
@@ -84,64 +79,71 @@ else:
 	source_model = myattenLSTM(max_features,maxlen,args,d_output)
 
 # training
-if args.mode == 'train':
-	# load data
-	X_train, Y_train = myloadData(file_name_train,file_name_train_tag,d_output,maxlen)
-	X_train =  X_train.astype(np.float32)
-	Y_train =  Y_train.astype(np.float32)
-	X_test, Y_test = myloadData(file_name_test,file_name_test_tag,d_output,maxlen)
-	X_test =  X_test.astype(np.float32)
-	Y_test = Y_test.astype(np.float32)
-	print 'Start training'
-	
-	word_indices_val, indices_word_val = get_dict(file_tag_dic) 
-	y_val, y_val_norm, valid_val_index, oov_val = vectorize_label(file_test_tag, d_output, word_indices_val)
-	y_val = y_val[valid_val_index,0:]
-	y_val_norm = y_val_norm[valid_val_index,0:]
+# load data
+X_train, Y_train = myloadData(file_name_train,file_name_train_tag,d_output,maxlen)
+Y_train =  Y_train.astype(np.float32)
+X_test, Y_test = myloadData(file_name_test,file_name_test_tag,d_output,maxlen)
+Y_test = Y_test.astype(np.float32)
 
-	y, y_norm, valid_index, oov = vectorize_label(file_train_tag, d_output, word_indices_val)
-	y = y[valid_index,0:]
-	y_norm = y_norm[valid_index,0:]
+word_indices_val, indices_word_val = get_dict(file_tag_dic) 
+y_val, y_val_norm, valid_val_index, oov_val = vectorize_label(file_test_tag, d_output, word_indices_val)
+y_val = y_val[valid_val_index,0:]
+y_val_norm = y_val_norm[valid_val_index,0:]
 
-	'''
-	for e in range(args.epochs):
-		print "================================================Epoch %d================================================================" % (e+1)
-		source_model.fit(
-			X_train,
-			Y_train,
-			batch_size=args.batch_size,
-			nb_epoch=1,
-			#verbose=0
-			validation_data=(X_test, Y_test)
-		)
-		
+y, y_norm, valid_index, oov = vectorize_label(file_train_tag, d_output, word_indices_val)
+y = y[valid_index,0:]
+y_norm = y_norm[valid_index,0:]
+print 'Start training'
+for e in range(args.epochs):
+	print "================================================Epoch %d================================================================" % (e+1)
+	source_model.fit(
+		X_train,
+		Y_train,
+		batch_size=args.batch_size,
+		nb_epoch=1,
+		validation_data=(X_test, Y_test)
+	)
+
+	if args.show_map == True:		
 		pred_val = source_model.predict(X_test)
 		pred_train = source_model.predict(X_train)
-	
+
 		#accu = multi_accu(,pred_val)
 		map_oov, pr_oov = count_MAP_total(y, pred_train, oov, valid_index)
 		print('MAP of train(oov keyword included) is ',map_oov)
-		print('P@R of train(oov keyword included) is ',pr_oov)
-
+		#print('P@R of train(oov keyword included) is ',pr_oov)
 		map_no_oov, pr_no_oov  = count_MAP_total(y, pred_train, np.zeros(len(oov)), valid_index)
 		print('MAP of train(oov keyword not included) is ',map_no_oov)
-		print('P@R of train(oov keyword not included) is ',pr_no_oov)
+		#print('P@R of train(oov keyword not included) is ',pr_no_oov)
 
 		map_oov, pr_oov = count_MAP_total(y_val, pred_val, oov_val, valid_val_index)
 		print('MAP of validaton(oov keyword included) is ',map_oov)
-		print('P@R of validaton(oov keyword included) is ',pr_oov)
-
+		#print('P@R of validaton(oov keyword included) is ',pr_oov)
 		map_no_oov, pr_no_oov  = count_MAP_total(y_val, pred_val, np.zeros(len(oov_val)), valid_val_index)
 		print('MAP of validaton(oov keyword not included) is ',map_no_oov)
-		print('P@R of validaton(oov keyword not included) is ',pr_no_oov)
+		#print('P@R of validaton(oov keyword not included) is ',pr_no_oov)
 
 	
-		# write out weights
-		if (e+1)%10 == 0:
-			theweight = source_model.get_weights()
-			fileout = open(pathweight + weightname + '_epo'+str(e+1),'wb')
-			pickle.dump(theweight, fileout)
-	'''
+	# write out weights
+	#if (e+1)%10 == 0:
+	theweight = source_model.get_weights()
+	fileout = open(pathweight + weightname + '_epo'+str(e+1),'wb')
+	pickle.dump(theweight, fileout)
+
+pred_val = source_model.predict(X_test)
+pred_train = source_model.predict(X_train)
+
+map_oov, pr_oov = count_MAP_total(y, pred_train, oov, valid_index)
+print('MAP of train(oov keyword included) is ',map_oov)
+map_no_oov, pr_no_oov  = count_MAP_total(y, pred_train, np.zeros(len(oov)), valid_index)
+print('MAP of train(oov keyword not included) is ',map_no_oov)
+
+map_oov, pr_oov = count_MAP_total(y_val, pred_val, oov_val, valid_val_index)
+print('MAP of validaton(oov keyword included) is ',map_oov)
+map_no_oov, pr_no_oov  = count_MAP_total(y_val, pred_val, np.zeros(len(oov_val)), valid_val_index)
+print('MAP of validaton(oov keyword not included) is ',map_no_oov)
+
+'''
 	total_data = len(X_train)
 	step = args.batch_size
 	data_portion = total_data/step
@@ -189,32 +191,5 @@ if args.mode == 'train':
 			theweight = source_model.get_weights()
 			fileout = open(pathweight + weightname + '_epo'+str(e+1),'wb')
 			pickle.dump(theweight, fileout)
-	
-else:	
-	X_test, Y_test = myloadData(file_name_test,file_name_test_tag,d_output,maxlen)
-	Y_test = Y_test.astype(np.float32)
-	#weightname += ('_epo'+str(args.epochs))
+'''
 
-	print 'Showing MAP result of ',source
-	print 'Using Pretrain Weight :',args.weight
-
-	#coco = pickle.load(open(pathweight+weightname,'rb'))
-	coco = pickle.load(open(args.weight, 'rb'))
-	source_model.set_weights(coco)
-	pred_val = source_model.predict(X_test)
-	
-
-	word_indices_val, indices_word_val = get_dict(file_tag_dic) 
-	y_val, y_val_norm, valid_val_index, oov_val = vectorize_label(file_test_tag, d_output, word_indices_val)
-	y_val = y_val[valid_val_index,0:]
-	y_val_norm = y_val_norm[valid_val_index,0:]
-
-	
-
-	map_oov, pr_oov = count_MAP_total(y_val, pred_val, oov_val, valid_val_index)
-	print('MAP of validaton(oov keyword included) is ',map_oov)
-
-	map_no_oov, pr_no_oov  = count_MAP_total(y_val, pred_val, np.zeros(len(oov_val)), valid_val_index)
-	print('MAP of validaton(oov keyword not included) is ',map_no_oov)
-
-	
