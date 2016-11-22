@@ -7,13 +7,14 @@ import os.path
 from sklearn.metrics import average_precision_score
 
 ## my own library
-from my_utils import printParams, myloadData, mypretrainLSTM, myattenLSTM 
+from my_utils import printParams, myloadData, mypretrainLSTM, glove_init_LSTM 
 from my_utils import get_dict, vectorize_label, mymap, count_MAP_total
+from build_glove_matrix import BuildEmbedMatrix
 
 import tensorflow as tf
 from keras.backend.tensorflow_backend import set_session
 config = tf.ConfigProto()
-config.gpu_options.per_process_gpu_memory_fraction = 0.3
+config.gpu_options.per_process_gpu_memory_fraction = 0.4
 set_session(tf.Session(config=config))
 
 parser = argparse.ArgumentParser()
@@ -22,10 +23,9 @@ parser.add_argument("-dense_dim", type=int, default=1024)
 parser.add_argument("-lstm_dim", type=int, default=128)
 parser.add_argument("-epochs", type=int, default=20)
 parser.add_argument("-batch_size", type=int, default=256)
-parser.add_argument("-mode", type=str, required=True, help="Choose to train model or pred and cal map", choices=['train','cal_map'])
+parser.add_argument("-mode", type=str, default='train')
 parser.add_argument("-exp_name", type=str, required=True, help="Name this experiment!!")
-#parser.add_argument("-max_features", type=int, default=15000)
-parser.add_argument("-weight", type=str)
+parser.add_argument("-embed_dir", type=str, default='none')
 args = parser.parse_args()
 
 # paths
@@ -90,8 +90,16 @@ print '========================='
 print 'Target Info'
 printParams(args,max_features,maxlen_target,d_output_target)
 
-source_model = mypretrainLSTM(max_features,maxlen,args,d_output,True)
-target_model = mypretrainLSTM(max_features,maxlen_target,args,d_output_target,False)
+if args.embed_dir == 'none':
+	source_model = mypretrainLSTM(max_features,maxlen,args,d_output,True)
+	target_model = mypretrainLSTM(max_features,maxlen_target,args,d_output_target,True)
+else:
+	BEM = BuildEmbedMatrix()
+	embedding_matrix = BEM.buildEmbedMatrix(args.embed_dir)
+	source_model = glove_init_LSTM(max_features,maxlen,args,d_output,True, embedding_matrix)
+	target_model = glove_init_LSTM(max_features,maxlen,args,d_output_target,True, embedding_matrix)
+	
+
 
 if args.mode == 'train':
 	#load data
@@ -121,11 +129,11 @@ if args.mode == 'train':
 		if (os.path.isfile(pathweight + weightname_target + '_epo'+str(e-1))):
 			filein = open(pathweight + weightname_target + '_epo'+str(e-1),'rb')
 			coco = pickle.load(filein)
-			coco = coco[:-5]
+			coco = coco[:-2]
 			oldweight = source_model.get_weights()
-			coco.append(oldweight[-5])
-			coco.append(oldweight[-4])
-			coco.append(oldweight[-3])
+			#coco.append(oldweight[-5])
+			#coco.append(oldweight[-4])
+			#coco.append(oldweight[-3])
 			coco.append(oldweight[-2])
 			coco.append(oldweight[-1])
 			source_model.set_weights(coco)
@@ -148,10 +156,10 @@ if args.mode == 'train':
 		fileout.close()
 
 		oldweight = target_model.get_weights()
-		theweight = theweight[:-5]
-		theweight.append(oldweight[-5])
-		theweight.append(oldweight[-4])
-		theweight.append(oldweight[-3])
+		theweight = theweight[:-2]
+		#theweight.append(oldweight[-5])
+		#theweight.append(oldweight[-4])
+		#theweight.append(oldweight[-3])
 		theweight.append(oldweight[-2])
 		theweight.append(oldweight[-1])
 		target_model.set_weights(theweight)

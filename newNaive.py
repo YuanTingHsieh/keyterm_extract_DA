@@ -98,34 +98,22 @@ if args.mode == 'train':
 	y = y[valid_index,0:]
 	y_norm = y_norm[valid_index,0:]
 
-	#total_data = len(X_train)
-	#step = args.batch_size
-	#data_portion = total_data/step
-	#print "Seperate to %d portions" % data_portion 
 	print "Training started..."
-	#index = np.arange(total_data)
 	
 	for e in range(args.epochs):
 		print "================================================Epoch %d================================================================" % (e+1)
-		#np.random.shuffle(index)
-#		for start in range(0,total_data,step):
-#			end = start+step
-#			if end > total_data:
-#				end = total_data
 		source_model.fit(
-		#		X_train[index[start:end]],
-		#		Y_train[index[start:end]],
 			X_train,
 			Y_train,
 			batch_size=args.batch_size,
 			nb_epoch=1,
 			verbose=1,
-			#validation_data=(X_test, Y_test)
+			validation_data=(X_test, Y_test)
 		)
-		loss, accuracy = source_model.evaluate(X_train, Y_train,verbose=0,batch_size=args.batch_size)
-		print "loss is %f , accuracy is %f" %(loss,accuracy)
-		loss, accuracy = source_model.evaluate(X_test, Y_test,verbose=0,batch_size=args.batch_size)
-		print "val_loss is %f , val_accuracy is %f" %(loss,accuracy)
+		#loss, accuracy = source_model.evaluate(X_train, Y_train,verbose=0,batch_size=args.batch_size)
+		#print "loss is %f , accuracy is %f" %(loss,accuracy)
+		#loss, accuracy = source_model.evaluate(X_test, Y_test,verbose=0,batch_size=args.batch_size)
+		#print "val_loss is %f , val_accuracy is %f" %(loss,accuracy)
 		pred_val = source_model.predict(X_test)
 		pred_train = source_model.predict(X_train)
 	

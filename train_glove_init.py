@@ -19,6 +19,7 @@ parser.add_argument("-mode", type=str, required=True, help="Choose to train mode
 parser.add_argument("-exp_name", type=str, required=True, help="Name this experiment!!")
 parser.add_argument("-train_on",type=str,required=True, choices=['stack','interspeech'])
 parser.add_argument("-pretrain_weight",type=str)
+parser.add_argument("-embed_dir",type=str,required=True)
 args = parser.parse_args()
 
 # paths
@@ -45,9 +46,9 @@ file_test_tag = datapathin+source+'.test.tag'
 file_train_tag = datapathin+source+'.train.tag'
 resultname = './result/'+source+'_'+args.exp_name+'.result'
 
-'''glove file'''
-glove_file = 'glove.6B.300d.txt'
-myWord2Vec = 'inter_and_stack.100d.txt'
+#'''glove file'''
+#glove_file = 'glove.6B.300d.txt'
+#myWord2Vec = 'inter_and_stack.100d.txt'
 
 # parameters
 lines = open(file_dic_name,'r').read().splitlines()
@@ -72,7 +73,7 @@ printParams(args,max_features,maxlen,d_output)
 # bulid embed
 BEM = BuildEmbedMatrix()
 #embedding_matrix = BEM.buildEmbedMatrix(glove_file)
-embedding_matrix = BEM.buildEmbedMatrix(myWord2Vec)
+embedding_matrix = BEM.buildEmbedMatrix(args.embed_dir)
 
 tobetrain = True
 if args.mode == 'adapt':

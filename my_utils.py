@@ -150,7 +150,7 @@ def myloadData(file_name, file_name_tag, d_output, maxlen):
 
 def Naive(max_features,args, d_output):
 	d_dense = args.dense_dim
-	print 'Building model'
+	print 'Building Naive model'
 	model = Sequential()
 	model.add(Dense(d_dense, init='glorot_uniform',input_shape= (max_features,)))
 	model.add(Activation('relu'))
@@ -209,7 +209,7 @@ def mypretrainLSTM(max_features, maxlen, args, d_output, tobetrain):
 	embedding_dim = args.embed_dim
 	d_lstm = args.lstm_dim
 	d_dense = args.dense_dim
-	print 'Building model'
+	print 'Building normal LSTM model'
 	model = Sequential()
 	model.add(Embedding(max_features, embedding_dim, input_length=maxlen, init='glorot_uniform'))
 	model.add(LSTM(output_dim = d_lstm, return_sequences=False, input_shape=(maxlen, embedding_dim), init='glorot_uniform', inner_init='orthogonal', inner_activation='hard_sigmoid', trainable = tobetrain)) #modify Hsieh
@@ -230,7 +230,7 @@ def myattenLSTM(max_features, maxlen, args, dim_output):
 	dim_latent = args.embed_dim
 	dim_lstm = args.lstm_dim
 	dim_dense = args.dense_dim
-	print 'Building model'
+	print 'Building atten LSTM model'
 	main_input = Input(shape=(maxlen,), dtype='int32',name='input')
 	embed_out = Embedding(input_dim = max_features+2, output_dim = dim_latent, input_length = maxlen, init = 'glorot_uniform')(main_input) # shape (batch_size, maxlen, dim_latent)
 	lstm_out = LSTM(output_dim = dim_lstm, return_sequences = False, input_shape = (maxlen,dim_latent), init ='glorot_uniform', inner_init = 'orthogonal', inner_activation = 'hard_sigmoid')(embed_out) # b_s, dim_lstm 

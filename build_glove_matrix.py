@@ -14,7 +14,7 @@ class BuildEmbedMatrix(object):
         self.available_datasets = ['stack','interspeech']
 
     def _readGlove(self, glove_filename):
-        f = open(os.path.join(GLOVE_DIR, glove_filename), 'r')
+        f = open(os.path.join(PKG, glove_filename), 'r')
         first_line = f.readline().split()
         print first_line
         self.embed_dim = int(first_line[1])

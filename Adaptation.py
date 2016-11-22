@@ -112,9 +112,9 @@ if __name__ == '__main__':
 	maxlen = 300
 	max_features = len(coco)+1
 	print 'max_features: ',max_features
-	embedding_dim = 100 # 1108 for mycorpus
+	embedding_dim = 300 # 1108 for mycorpus
 	d_lstm = 128
-	d_dense = 1024
+	d_dense = 512
 	d_output = 1500
 	d_lowdim = 50
 	epoch = 1
